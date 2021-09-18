@@ -1,0 +1,56 @@
+proc format;
+	value trt 1='R' 2='T1' 3='T2' 4='T3';
+run;
+
+*** Generating the standard Latin Square;
+
+proc plan seed=12345;
+	factors period=4 ordered seq=4 ordered / noprint;
+	treatments tmts=4 cyclic;
+	output out=g;
+quit;
+
+proc sort data=g;
+	by seq period;
+run;
+
+proc transpose data=g out=g1(rename=(col1=period1 col2=period2 col3=period3 
+		col4=period4) drop=_name_);
+	by seq;
+	var tmts;
+run;
+
+*** Obtain a mirror image of the standard
+Latin square;
+
+data g2;
+	set g1;
+	period11=period4;
+	period22=period3;
+	period33=period2;
+	period44=period1;
+run;
+
+*** Interlace each column of the standard
+and its mirror image;
+
+data g1(rename=(period2=period3 period11=period2 period22=period4));
+	set g2 (drop=period3 period4 period33 period44);
+	subno=put(_n_, z3.);
+run;
+
+proc sort;
+	by subno;
+run;
+
+proc print noobs double uniform split='*';
+	var SEQ PERIOD1 – PERIOD4;
+	id subno;
+	label subno="PATIENT*ID" seq="SEQ";
+	period1=“PER1”
+ period2=“PER2”
+ period3=“PER3”
+ period4=“PER4”;
+	format period1 trt. Period2 trt.
+ period3 trt. period4 trt.;
+run;
